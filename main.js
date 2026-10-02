@@ -25,61 +25,60 @@ const glados = async () => {
       body: JSON.stringify({ token: 'glados.rocks' }),
     }).then((r) => r.json())
     
-    const res = [
-      'Checkin OK',
-      `${checkin.message}`,
-      `Status: ${JSON.stringify(checkin)}`,
-    ]
-    console.log(res)
-    return res
+    console.log(checkin)
+    return checkin
   } catch (error) {
-    const res = [
-      'Checkin Error',
-      `${error}`,
-      `<${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}>`,
-    ]
-    console.log(res)
-    return res
+    console.log(error)
+    return {
+      success: false,
+      message: `签到失败: ${error}`,
+      error: error.toString(),
+    }
   }
 }
 
-const notify = async (contents) => {
+const notify = async (data) => {
   const token = process.env.NOTIFY
-  if (!token || !contents) return
+  if (!token || !data) return
+
+  const title = `签到成功 +${data.points || 0} 积分`
+  const content = data.message || '签到完成'
+
   await fetch(`https://www.pushplus.plus/send`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       token,
-      title: contents[0],
-      content: contents.join('<br>'),
+      title,
+      content,
       template: 'markdown',
     }),
   })
 }
 
-const notify_ft = async (contents) => {
+const notify_ft = async (data) => {
   const token = process.env.FT_SEND_KEY
-  if (!token || !contents) return
+  if (!token || !data) return
   
-  const baseUrl = `https://sctapi.ftqq.com/${token}.send`;
+  const baseUrl = `https://sctapi.ftqq.com/${token}.send`
   const params = {
-    text: contents[0],
-    desp: contents.join('\n\n')
-  };
+    text: `签到成功 +${data.points || 0} 积分`,
+    desp: data.message || '签到完成'
+  }
   console.log(params)
   
   // 使用 URL 和 URLSearchParams 搭配处理
-  const url = new URL(baseUrl);
-  url.search = new URLSearchParams(params);
+  const url = new URL(baseUrl)
+  url.search = new URLSearchParams(params)
   await fetch(url.toString(), {
     method: 'GET'
   })
 }
 
 const main = async () => {
-  //await notify(await glados())
-  await notify_ft(await glados())
+  const result = await glados()
+  //await notify(result)
+  await notify_ft(result)
 }
 
 main()
